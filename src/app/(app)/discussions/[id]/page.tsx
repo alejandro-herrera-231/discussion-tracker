@@ -53,9 +53,10 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
             orderBy: { importance: "desc" },
             include: {
               stances: { include: { speaker: true } },
+              factCheck: true,
               children: {
                 orderBy: { importance: "desc" },
-                include: { stances: { include: { speaker: true } } },
+                include: { stances: { include: { speaker: true } }, factCheck: true },
               },
             },
           },

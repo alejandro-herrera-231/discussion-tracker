@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { List } from "lucide-react"
 import { BubbleGraph } from "@/components/bubble-graph"
+import { FactCheckPanel } from "@/components/fact-check-panel"
 
 const SPEAKER_COLORS = [
   "bg-blue-100 text-blue-800",
@@ -14,9 +15,15 @@ const SPEAKER_COLORS = [
 
 type Speaker = { id: string; label: string }
 type TopicStance = { id: string; speakerId: string; stance: string; speaker: Speaker }
-type SubTopic = { id: string; title: string; description: string; importance: number; stances: TopicStance[] }
-type Topic = { id: string; title: string; description: string; importance: number; stances: TopicStance[]; children: SubTopic[] }
+type FactCheckData = { results: string } | null
+type SubTopic = { id: string; title: string; description: string; importance: number; stances: TopicStance[]; factCheck: FactCheckData }
+type Topic = { id: string; title: string; description: string; importance: number; stances: TopicStance[]; factCheck: FactCheckData; children: SubTopic[] }
 type Analysis = { summary: string; topics: Topic[] }
+
+function parseFactCheck(fc: FactCheckData) {
+  if (!fc) return null
+  try { return JSON.parse(fc.results) } catch { return null }
+}
 
 function ImportanceBar({ value }: { value: number }) {
   return (
@@ -102,6 +109,13 @@ export function AnalysisSection({
                 </div>
               </div>
               <StanceList stances={topic.stances} speakers={speakers} />
+              {topic.stances.length > 0 && (
+                <FactCheckPanel
+                  topicId={topic.id}
+                  speakers={speakers}
+                  existing={parseFactCheck(topic.factCheck)}
+                />
+              )}
 
               {/* Sub-topics */}
               {topic.children.length > 0 && (
@@ -119,6 +133,13 @@ export function AnalysisSection({
                         </div>
                       </div>
                       <StanceList stances={sub.stances} speakers={speakers} />
+                      {sub.stances.length > 0 && (
+                        <FactCheckPanel
+                          topicId={sub.id}
+                          speakers={speakers}
+                          existing={parseFactCheck(sub.factCheck)}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

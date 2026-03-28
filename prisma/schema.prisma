@@ -74,6 +74,15 @@ model Topic {
   description String
   importance  Int
   stances     TopicStance[]
+  factCheck   FactCheck?
+}
+
+model FactCheck {
+  id        String   @id @default(cuid())
+  topicId   String   @unique
+  topic     Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  results   String   // JSON: { stanceVerdicts: [{ speakerId, speakerLabel, claim, verdict, assessment, sources: [{ title, url, excerpt }] }] }
+  createdAt DateTime @default(now())
 }
 
 model TopicStance {

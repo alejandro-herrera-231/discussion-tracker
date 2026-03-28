@@ -12,6 +12,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
     "@prisma/client": "^5.22.0",
+    "@tavily/core": "^0.7.2",
     "@types/d3": "^7.4.3",
     "assemblyai": "^4.29.0",
     "bcryptjs": "^3.0.3",
