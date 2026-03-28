@@ -49,8 +49,15 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
       analysis: {
         include: {
           topics: {
+            where: { parentId: null },
             orderBy: { importance: "desc" },
-            include: { stances: { include: { speaker: true } } },
+            include: {
+              stances: { include: { speaker: true } },
+              children: {
+                orderBy: { importance: "desc" },
+                include: { stances: { include: { speaker: true } } },
+              },
+            },
           },
         },
       },

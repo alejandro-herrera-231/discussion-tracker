@@ -38,13 +38,26 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   "summary": "A natural conversational summary of the discussion. Mention speakers by name. 1 sentence for short conversations, up to 4 for very long ones.",
   "topics": [
     {
-      "title": "Short topic name",
+      "title": "Short main topic name",
       "description": "1-2 sentence description of what was discussed on this topic",
       "importance": 7,
       "stances": [
         {
           "speakerLabel": "Speaker name exactly as given",
           "stance": "This speaker's position, opinion, or contribution on this topic"
+        }
+      ],
+      "subTopics": [
+        {
+          "title": "Short sub-topic name",
+          "description": "1-2 sentence description of this specific sub-topic",
+          "importance": 5,
+          "stances": [
+            {
+              "speakerLabel": "Speaker name exactly as given",
+              "stance": "This speaker's position on this sub-topic"
+            }
+          ]
         }
       ]
     }
@@ -53,8 +66,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
 Rules:
 - importance is 1-10 (10 = dominated the conversation, 1 = briefly mentioned)
-- Only include speakers in a topic's stances if they actually spoke about it
+- Only include speakers in stances if they actually spoke about that topic/sub-topic
 - Order topics by importance, highest first
+- subTopics are optional — only include them if the main topic genuinely breaks down into distinct sub-discussions
+- subTopics should each have their own stances reflecting each speaker's specific position on that sub-topic
 - Return ONLY the JSON object, no other text, no markdown code blocks
 
 Speakers in this discussion: ${speakerNames}
@@ -66,7 +81,7 @@ ${transcript}`
   try {
     message = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages: [{ role: "user", content: prompt }],
     })
   } catch (err) {
@@ -80,17 +95,20 @@ ${transcript}`
   const jsonMatch = raw.text.match(/\{[\s\S]*\}/)
   if (!jsonMatch) return NextResponse.json({ error: "Could not parse response" }, { status: 500 })
 
-  const data = JSON.parse(jsonMatch[0]) as {
-    summary: string
-    topics: {
-      title: string
-      description: string
-      importance: number
-      stances: { speakerLabel: string; stance: string }[]
-    }[]
+  type StanceData = { speakerLabel: string; stance: string }
+  type SubTopicData = { title: string; description: string; importance: number; stances: StanceData[] }
+  type TopicData = { title: string; description: string; importance: number; stances: StanceData[]; subTopics?: SubTopicData[] }
+  const data = JSON.parse(jsonMatch[0]) as { summary: string; topics: TopicData[] }
+
+  function buildStances(stances: StanceData[]) {
+    return stances.flatMap((s) => {
+      const speaker = recording.speakers.find((sp) => sp.label === s.speakerLabel)
+      if (!speaker) return []
+      return [{ speakerId: speaker.id, stance: s.stance }]
+    })
   }
 
-  // Save to DB
+  // Two-pass save: create analysis + main topics first, then sub-topics with parentId
   const analysis = await prisma.analysis.create({
     data: {
       recordingId: id,
@@ -100,17 +118,38 @@ ${transcript}`
           title: t.title,
           description: t.description,
           importance: t.importance,
-          stances: {
-            create: t.stances.flatMap((s) => {
-              const speaker = recording.speakers.find((sp) => sp.label === s.speakerLabel)
-              if (!speaker) return []
-              return [{ speakerId: speaker.id, stance: s.stance }]
-            }),
-          },
+          stances: { create: buildStances(t.stances) },
         })),
       },
     },
+    include: { topics: true },
   })
+
+  // Create sub-topics referencing their parent IDs
+  for (const topicData of data.topics) {
+    if (!topicData.subTopics?.length) continue
+    const savedParent = analysis.topics.find((t) => t.title === topicData.title)
+    if (!savedParent) continue
+    await prisma.topic.createMany({
+      data: topicData.subTopics.map((sub) => ({
+        analysisId: analysis.id,
+        parentId: savedParent.id,
+        title: sub.title,
+        description: sub.description,
+        importance: sub.importance,
+      })),
+    })
+    // Create stances for sub-topics
+    const savedSubs = await prisma.topic.findMany({ where: { parentId: savedParent.id } })
+    for (const subData of topicData.subTopics) {
+      const savedSub = savedSubs.find((s) => s.title === subData.title)
+      if (!savedSub) continue
+      const stances = buildStances(subData.stances)
+      if (stances.length > 0) {
+        await prisma.topicStance.createMany({ data: stances.map((s) => ({ ...s, topicId: savedSub.id })) })
+      }
+    }
+  }
 
   return NextResponse.json({ id: analysis.id })
 }

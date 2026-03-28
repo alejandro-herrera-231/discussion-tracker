@@ -67,6 +67,9 @@ model Topic {
   id          String        @id @default(cuid())
   analysisId  String
   analysis    Analysis      @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Topic?        @relation("SubTopics", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  children    Topic[]       @relation("SubTopics")
   title       String
   description String
   importance  Int
