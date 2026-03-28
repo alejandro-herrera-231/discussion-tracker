@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Pencil } from "lucide-react"
 
 const SPEAKER_COLORS = [
@@ -57,7 +57,7 @@ export function EditableSpeakerCard({
 
   return (
     <Card>
-      <CardHeader className="pb-1 pt-4 px-4">
+      <CardContent className="px-3 py-2.5 flex items-center justify-center gap-2">
         {editing ? (
           <input
             ref={inputRef}
@@ -65,22 +65,20 @@ export function EditableSpeakerCard({
             onChange={(e) => setLabel(e.target.value)}
             onBlur={save}
             onKeyDown={handleKeyDown}
-            className="text-sm font-medium bg-transparent border-b border-foreground outline-none w-full"
+            className="text-xs font-medium bg-transparent border-b border-foreground outline-none text-center w-full"
           />
         ) : (
           <button
             onClick={startEditing}
-            className="flex items-center gap-1.5 group text-left"
+            className="flex items-center gap-1 group"
           >
-            <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+            <span className="text-base font-medium text-muted-foreground group-hover:text-foreground transition-colors">
               {label}
             </span>
-            <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Pencil className="w-2.5 h-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
           </button>
         )}
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <span className={`text-xs font-medium px-2 py-1 rounded-full ${SPEAKER_COLORS[index % SPEAKER_COLORS.length]}`}>
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${SPEAKER_COLORS[index % SPEAKER_COLORS.length]}`}>
           {formatDuration(speaker.totalSpeakingTime)}
         </span>
       </CardContent>

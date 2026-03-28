@@ -58,19 +58,23 @@ function StanceList({ stances, speakers }: { stances: TopicStance[]; speakers: S
 export function AnalysisSection({
   analysis,
   speakers,
+  hideSummary = false,
 }: {
   analysis: Analysis
   speakers: Speaker[]
+  hideSummary?: boolean
 }) {
   const [view, setView] = useState<"topics" | "bubbles">("topics")
 
   return (
     <div className="flex flex-col gap-4">
       {/* Summary */}
-      <div className="rounded-xl border bg-muted/30 p-5 flex flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Summary</p>
-        <p className="text-sm leading-relaxed">{analysis.summary}</p>
-      </div>
+      {!hideSummary && (
+        <div className="rounded-xl border bg-muted/30 p-5 flex flex-col gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Summary</p>
+          <p className="text-sm leading-relaxed">{analysis.summary}</p>
+        </div>
+      )}
 
       {/* Toggle */}
       <div className="flex items-center justify-between">
@@ -98,7 +102,7 @@ export function AnalysisSection({
       {view === "topics" ? (
         <div className="flex flex-col gap-3">
           {analysis.topics.map((topic) => (
-            <div key={topic.id} className="rounded-xl border p-5 flex flex-col gap-3">
+            <div key={topic.id} className="rounded-xl border bg-muted/40 p-5 flex flex-col gap-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-col gap-1 flex-1">
                   <h4 className="font-semibold">{topic.title}</h4>

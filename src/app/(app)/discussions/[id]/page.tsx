@@ -10,6 +10,9 @@ import { DiscussionView } from "@/components/discussion-view"
 import { EditableSpeakerCard } from "@/components/editable-speaker-card"
 import { AnalysisSection } from "@/components/analysis-section"
 import { AnalyseButton } from "@/components/analyse-button"
+import { CollapsibleBlock } from "@/components/collapsible-block"
+import { SpeakerPieChart } from "@/components/speaker-pie-chart"
+import { StatisticsSection } from "@/components/statistics-section"
 import { Loader2, ArrowLeft } from "lucide-react"
 
 function formatDuration(seconds: number) {
@@ -27,14 +30,6 @@ function statusBadge(status: string) {
     default: return <Badge variant="secondary">{status}</Badge>
   }
 }
-
-const SPEAKER_COLORS = [
-  "bg-blue-100 text-blue-800",
-  "bg-purple-100 text-purple-800",
-  "bg-pink-100 text-pink-800",
-  "bg-orange-100 text-orange-800",
-  "bg-teal-100 text-teal-800",
-]
 
 export default async function DiscussionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -112,28 +107,61 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
 
       {/* Results */}
       {recording.status === "DONE" && (
-        <>
-          {/* Speaker summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {recording.speakers.map((speaker, i) => (
-              <EditableSpeakerCard key={speaker.id} speaker={speaker} index={i} />
-            ))}
-          </div>
+        <div className="flex flex-col">
+          {/* Block 1 — Summary */}
+          <CollapsibleBlock title="Summary" icon="clock" color="seagreen" defaultOpen={true}>
+            <div className="flex flex-col gap-4">
+              {recording.analysis && (
+                <div className="rounded-xl border p-4 flex flex-col gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Summary</p>
+                  <p className="text-sm leading-relaxed">{recording.analysis.summary}</p>
+                </div>
+              )}
+              <div className="flex items-center">
+                <div className="flex flex-col gap-2 w-1/3">
+                  {recording.speakers.map((speaker, i) => (
+                    <EditableSpeakerCard key={speaker.id} speaker={speaker} index={i} />
+                  ))}
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                  <SpeakerPieChart speakers={recording.speakers} />
+                </div>
+              </div>
+            </div>
+          </CollapsibleBlock>
 
-          {/* Analysis */}
-          {recording.analysis && (
-            <AnalysisSection analysis={recording.analysis} speakers={recording.speakers} />
-          )}
-          <div className="flex justify-end">
+          <hr className="border-border my-2" />
+
+          {/* Block 2 — Topics Discussed */}
+          <CollapsibleBlock title="Topics Discussed" icon="bar-chart" color="cobalt" defaultOpen={true}>
+            {recording.analysis
+              ? <AnalysisSection analysis={recording.analysis} speakers={recording.speakers} hideSummary={true} />
+              : <p className="text-sm text-muted-foreground">No analysis yet — run analysis to see topics.</p>
+            }
+          </CollapsibleBlock>
+
+          <div className="flex justify-end py-2">
             <AnalyseButton recordingId={id} hasExisting={!!recording.analysis} />
           </div>
 
-          <DiscussionView
-            utterances={recording.utterances}
-            speakers={recording.speakers}
-            totalDuration={recording.duration ?? (Math.max(...recording.utterances.map(u => u.endMs)) / 1000)}
-          />
-        </>
+          <hr className="border-border my-2" />
+
+          {/* Block 3 — Transcript & Timeline */}
+          <CollapsibleBlock title="Transcript & Timeline" icon="file-text" color="ivory" defaultOpen={true}>
+            <DiscussionView
+              utterances={recording.utterances}
+              speakers={recording.speakers}
+              totalDuration={recording.duration ?? (Math.max(...recording.utterances.map(u => u.endMs)) / 1000)}
+            />
+          </CollapsibleBlock>
+
+          <hr className="border-border my-2" />
+
+          {/* Block 4 — Statistics */}
+          <CollapsibleBlock title="Statistics" icon="trending-up" color="gold" defaultOpen={false}>
+            <StatisticsSection />
+          </CollapsibleBlock>
+        </div>
       )}
     </div>
   )
