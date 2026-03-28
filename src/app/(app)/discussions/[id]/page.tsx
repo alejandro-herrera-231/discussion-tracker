@@ -6,8 +6,10 @@ import { prisma } from "@/lib/prisma"
 import { Badge } from "@/components/ui/badge"
 import { StatusPoller } from "@/components/status-poller"
 import { DetailActions } from "@/components/detail-actions"
-import { TranscriptSection } from "@/components/transcript-section"
+import { DiscussionView } from "@/components/discussion-view"
 import { EditableSpeakerCard } from "@/components/editable-speaker-card"
+import { AnalysisSection } from "@/components/analysis-section"
+import { AnalyseButton } from "@/components/analyse-button"
 import { Loader2, ArrowLeft } from "lucide-react"
 
 function formatDuration(seconds: number) {
@@ -44,6 +46,14 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
     include: {
       speakers: true,
       utterances: { orderBy: { startMs: "asc" }, include: { speaker: true } },
+      analysis: {
+        include: {
+          topics: {
+            orderBy: { importance: "desc" },
+            include: { stances: { include: { speaker: true } } },
+          },
+        },
+      },
     },
   })
 
@@ -102,13 +112,19 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
             ))}
           </div>
 
-          {/* Transcript */}
-          <div className="flex flex-col gap-2">
-            <h2 className="font-semibold text-lg">Transcript
-              <span className="text-sm font-normal text-muted-foreground ml-2">— click any line to edit</span>
-            </h2>
-            <TranscriptSection utterances={recording.utterances} speakers={recording.speakers} />
+          {/* Analysis */}
+          {recording.analysis && (
+            <AnalysisSection analysis={recording.analysis} speakers={recording.speakers} />
+          )}
+          <div className="flex justify-end">
+            <AnalyseButton recordingId={id} hasExisting={!!recording.analysis} />
           </div>
+
+          <DiscussionView
+            utterances={recording.utterances}
+            speakers={recording.speakers}
+            totalDuration={recording.duration ?? (Math.max(...recording.utterances.map(u => u.endMs)) / 1000)}
+          />
         </>
       )}
     </div>

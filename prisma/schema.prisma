@@ -18,27 +18,29 @@ model User {
 }
 
 model Recording {
-  id         String      @id @default(cuid())
-  userId     String
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title      String      @default("Untitled Recording")
-  status     String      @default("PENDING")
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String      @default("Untitled Recording")
+  status       String      @default("PENDING")
   audioPath    String?
   duration     Float?
   assemblyAiId String?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  speakers   Speaker[]
-  utterances Utterance[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  speakers     Speaker[]
+  utterances   Utterance[]
+  analysis     Analysis?
 }
 
 model Speaker {
-  id                String      @id @default(cuid())
+  id                String        @id @default(cuid())
   recordingId       String
-  recording         Recording   @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  recording         Recording     @relation(fields: [recordingId], references: [id], onDelete: Cascade)
   label             String
   totalSpeakingTime Float
   utterances        Utterance[]
+  stances           TopicStance[]
 }
 
 model Utterance {
@@ -50,4 +52,32 @@ model Utterance {
   text        String
   startMs     Int
   endMs       Int
+}
+
+model Analysis {
+  id          String   @id @default(cuid())
+  recordingId String   @unique
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  summary     String
+  createdAt   DateTime @default(now())
+  topics      Topic[]
+}
+
+model Topic {
+  id          String        @id @default(cuid())
+  analysisId  String
+  analysis    Analysis      @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  importance  Int
+  stances     TopicStance[]
+}
+
+model TopicStance {
+  id        String  @id @default(cuid())
+  topicId   String
+  topic     Topic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  speakerId String
+  speaker   Speaker @relation(fields: [speakerId], references: [id], onDelete: Cascade)
+  stance    String
 }
