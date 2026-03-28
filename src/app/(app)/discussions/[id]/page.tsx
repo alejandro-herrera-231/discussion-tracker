@@ -125,7 +125,7 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
             <AnalysisSection analysis={recording.analysis} speakers={recording.speakers} />
           )}
           <div className="flex justify-end">
-            <AnalyseButton recordingId={id} hasExisting={!!recording.analysis} />
+            <AnalyseButton recordingId={id} hasExisting={!!recording.analysis} initialDepth={(recording.analysis?.depth as "low" | "medium" | "high") ?? "medium"} />
           </div>
 
           <DiscussionView
