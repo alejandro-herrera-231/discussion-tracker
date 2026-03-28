@@ -1,10 +1,11 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -22,8 +23,9 @@ model Recording {
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   title      String      @default("Untitled Recording")
   status     String      @default("PENDING")
-  audioPath  String?
-  duration   Float?
+  audioPath    String?
+  duration     Float?
+  assemblyAiId String?
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
   speakers   Speaker[]

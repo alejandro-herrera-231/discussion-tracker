@@ -2,6 +2,13 @@
 
 # dependencies
 /node_modules
+
+# database
+prisma/dev.db
+prisma/dev.db-journal
+
+# uploaded audio files
+/uploads
 /.pnp
 .pnp.*
 .yarn/*
