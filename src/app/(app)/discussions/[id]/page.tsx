@@ -141,7 +141,7 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
           </CollapsibleBlock>
 
           <div className="flex justify-end py-2">
-            <AnalyseButton recordingId={id} hasExisting={!!recording.analysis} />
+            <AnalyseButton recordingId={id} hasExisting={!!recording.analysis} initialDepth={(recording.analysis?.depth as "low" | "medium" | "high") ?? "medium"} />
           </div>
 
           <hr className="border-border my-2" />

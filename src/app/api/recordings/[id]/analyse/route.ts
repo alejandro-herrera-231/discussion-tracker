@@ -6,8 +6,21 @@ import { prisma } from "@/lib/prisma"
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+const DEPTH_INSTRUCTIONS = {
+  low: `- Identify only 3–5 broad, high-level themes. Do NOT create any subTopics — return an empty array [] for every topic's subTopics field.
+- Keep topic descriptions concise (1 sentence each).`,
+  medium: `- Identify 4–8 topics. Each may have 1–3 subTopics where the conversation genuinely broke into distinct sub-discussions.
+- Only add subTopics when they add meaningful detail beyond the parent topic.`,
+  high: `- Identify as many distinct topics as the conversation warrants (no upper limit).
+- Every main topic should have 2–5 specific subTopics that capture finer-grained points or disagreements.
+- Stances at the sub-topic level should be more precise than at the parent level.`,
+}
+
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const body = await req.json().catch(() => ({}))
+  const depth: keyof typeof DEPTH_INSTRUCTIONS =
+    body.depth && body.depth in DEPTH_INSTRUCTIONS ? body.depth : "medium"
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -68,9 +81,11 @@ Rules:
 - importance is 1-10 (10 = dominated the conversation, 1 = briefly mentioned)
 - Only include speakers in stances if they actually spoke about that topic/sub-topic
 - Order topics by importance, highest first
-- subTopics are optional — only include them if the main topic genuinely breaks down into distinct sub-discussions
 - subTopics should each have their own stances reflecting each speaker's specific position on that sub-topic
 - Return ONLY the JSON object, no other text, no markdown code blocks
+
+Depth instructions (follow these strictly):
+${DEPTH_INSTRUCTIONS[depth]}
 
 Speakers in this discussion: ${speakerNames}
 
@@ -113,6 +128,7 @@ ${transcript}`
     data: {
       recordingId: id,
       summary: data.summary,
+      depth,
       topics: {
         create: data.topics.map((t) => ({
           title: t.title,
