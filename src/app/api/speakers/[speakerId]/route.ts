@@ -24,3 +24,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ speake
 
   return NextResponse.json({ success: true })
 }
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ speakerId: string }> }) {
+  const { speakerId } = await params
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const speaker = await prisma.speaker.findUnique({
+    where: { id: speakerId },
+    include: { recording: true, utterances: { take: 1 } },
+  })
+
+  if (!speaker || speaker.recording.userId !== session.user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
+
+  if (speaker.utterances.length > 0) {
+    return NextResponse.json(
+      { error: "Reassign all utterances from this speaker before removing them." },
+      { status: 400 }
+    )
+  }
+
+  await prisma.speaker.delete({ where: { id: speakerId } })
+
+  return NextResponse.json({ success: true })
+}
