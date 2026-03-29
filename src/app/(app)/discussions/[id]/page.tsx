@@ -32,11 +32,13 @@ function statusBadge(status: string) {
   }
 }
 
-// Interruption threshold: speaker changes within 150ms are treated as quick cutoffs.
-// AssemblyAI diarized transcripts are sequential (non-overlapping), so we use a
-// tight gap heuristic. Normal turn-taking pauses are 200-500ms; 150ms catches only
-// genuine rapid cut-offs without flagging conversational flow.
+// Interruption detection thresholds:
+// - Gap < 150ms between speakers → quick enough to be a cut-off (not normal turn-taking)
+// - Prev utterance must be > 1500ms → ensures we only flag genuine mid-speech cut-offs.
+//   Without this, every "resume after interruption" (Alice talks, Bob cuts in, Alice resumes)
+//   would falsely count Alice as interrupting Bob on the resume step.
 const INTERRUPTION_GAP_MS = 150
+const INTERRUPTION_MIN_PREV_MS = 1500
 
 type Utterance = { speakerId: string; speaker: { label: string }; startMs: number; endMs: number; text: string }
 
@@ -47,14 +49,15 @@ function computeInterruptions(utterances: Utterance[]): InterruptionEntry[] {
     const prev = sorted[i - 1]
     const curr = sorted[i]
     const gap = curr.startMs - prev.endMs
-    if (prev.speakerId !== curr.speakerId && gap >= 0 && gap < INTERRUPTION_GAP_MS) {
-      const key = `${curr.speakerId}->${prev.speakerId}`
+    const prevDuration = prev.endMs - prev.startMs
+    if (prev.speakerId !== curr.speakerId && gap >= 0 && gap < INTERRUPTION_GAP_MS && prevDuration >= INTERRUPTION_MIN_PREV_MS) {
+      const key = `${prev.speakerId}->${curr.speakerId}`
       if (!pairs[key]) {
         pairs[key] = {
-          interrupterId: curr.speakerId,
-          interrupterLabel: curr.speaker.label,
-          interruptedId: prev.speakerId,
-          interruptedLabel: prev.speaker.label,
+          interrupterId: prev.speakerId,
+          interrupterLabel: prev.speaker.label,
+          interruptedId: curr.speakerId,
+          interruptedLabel: curr.speaker.label,
           count: 0,
           moments: [],
         }
