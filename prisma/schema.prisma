@@ -55,13 +55,14 @@ model Utterance {
 }
 
 model Analysis {
-  id          String   @id @default(cuid())
-  recordingId String   @unique
-  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
-  summary     String
-  depth       String   @default("medium")
-  createdAt   DateTime @default(now())
-  topics      Topic[]
+  id             String   @id @default(cuid())
+  recordingId    String   @unique
+  recording      Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  summary        String
+  depth          String   @default("medium")
+  contradictions String?  // JSON: [{ speakerId, speakerLabel, statement1, statement2, explanation }]
+  createdAt      DateTime @default(now())
+  topics         Topic[]
 }
 
 model Topic {

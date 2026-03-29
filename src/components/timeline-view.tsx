@@ -87,7 +87,7 @@ export function TimelineView({
   )
 
   return (
-    <div className="overflow-x-auto">
+    <div>
       {/* Column headers */}
       <div className="flex gap-3 mb-4" style={{ paddingLeft: "3.5rem" }}>
         {speakers.map((s, i) => (
@@ -129,17 +129,30 @@ export function TimelineView({
               {blocks.map((block) => {
                 const top = (block.startMs / (totalDuration * 1000)) * containerHeight
                 const height = Math.max(38, ((block.endMs - block.startMs) / (totalDuration * 1000)) * containerHeight)
+                // text-xs leading-snug ≈ 16.5px/line (12px * 1.375), px-2 py-1 = 8px vertical padding
+                // Subtract 2px buffer so the last line never gets partially clipped by overflow-hidden
+                const partsBadge = block.count > 1 ? 20 : 0
+                const maxLines = Math.max(1, Math.floor((height - 8 - partsBadge - 2) / 16.5))
                 return (
                   <div
                     key={block.key}
                     onClick={() => onEdit(block.firstUtterance)}
-                    className={`absolute left-1 right-1 rounded-md p-2 cursor-pointer overflow-hidden border
+                    className={`absolute left-1 right-1 rounded-md px-2 py-1 cursor-pointer overflow-hidden border
                       hover:ring-2 hover:ring-foreground/20 transition-all
                       ${SPEAKER_COLORS[i % SPEAKER_COLORS.length]}
                       ${SPEAKER_BORDER_COLORS[i % SPEAKER_BORDER_COLORS.length]}`}
                     style={{ top, height }}
                   >
-                    <p className="text-xs leading-relaxed line-clamp-3">{block.text}</p>
+                    <p
+                      className="text-xs leading-snug overflow-hidden"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: maxLines,
+                        WebkitBoxOrient: "vertical",
+                      }}
+                    >
+                      {block.text}
+                    </p>
                     {block.count > 1 && (
                       <p className="text-xs opacity-50 mt-1">{block.count} parts</p>
                     )}

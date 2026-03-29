@@ -12,7 +12,7 @@ import { AnalysisSection } from "@/components/analysis-section"
 import { AnalyseButton } from "@/components/analyse-button"
 import { CollapsibleBlock } from "@/components/collapsible-block"
 import { SpeakerPieChart } from "@/components/speaker-pie-chart"
-import { StatisticsSection } from "@/components/statistics-section"
+import { StatisticsSection, type InterruptionEntry, type IncorrectFactEntry, type ContradictionEntry } from "@/components/statistics-section"
 import { Loader2, ArrowLeft } from "lucide-react"
 
 function formatDuration(seconds: number) {
@@ -29,6 +29,74 @@ function statusBadge(status: string) {
     case "ERROR": return <Badge variant="destructive">Error</Badge>
     default: return <Badge variant="secondary">{status}</Badge>
   }
+}
+
+// Interruption threshold: speaker changes within 300ms are treated as quick cutoffs.
+// AssemblyAI diarized transcripts are sequential (no overlapping timestamps), so we
+// use a gap-based heuristic. 300ms catches genuine rapid jumps without flagging
+// normal conversational turn-taking pauses (~500ms+).
+const INTERRUPTION_GAP_MS = 300
+
+type Utterance = { speakerId: string; speaker: { label: string }; startMs: number; endMs: number }
+
+function computeInterruptions(utterances: Utterance[]): InterruptionEntry[] {
+  const sorted = [...utterances].sort((a, b) => a.startMs - b.startMs)
+  const counts: Record<string, { label: string; count: number }> = {}
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1]
+    const curr = sorted[i]
+    const gap = curr.startMs - prev.endMs
+    if (prev.speakerId !== curr.speakerId && gap < INTERRUPTION_GAP_MS) {
+      if (!counts[curr.speakerId]) counts[curr.speakerId] = { label: curr.speaker.label, count: 0 }
+      counts[curr.speakerId].count++
+    }
+  }
+  return Object.entries(counts).map(([speakerId, { label, count }]) => ({ speakerId, speakerLabel: label, count }))
+}
+
+type FactCheckData = { results: string } | null
+type TopicWithFactCheck = { id: string; title: string; stances: { id: string }[]; factCheck: FactCheckData; children: { id: string; title: string; stances: { id: string }[]; factCheck: FactCheckData }[] }
+
+function computeIncorrectFacts(topics: TopicWithFactCheck[]): IncorrectFactEntry[] {
+  const facts: IncorrectFactEntry[] = []
+  function processFactCheck(factCheck: FactCheckData, topicTitle: string) {
+    if (!factCheck) return
+    try {
+      const parsed = JSON.parse(factCheck.results) as { stanceVerdicts: { speakerId: string; speakerLabel: string; claim: string; verdict: string; assessment: string }[] }
+      for (const sv of parsed.stanceVerdicts) {
+        if (sv.verdict === "contradicted") {
+          facts.push({ speakerId: sv.speakerId, speakerLabel: sv.speakerLabel, claim: sv.claim, assessment: sv.assessment, topicTitle })
+        }
+      }
+    } catch {}
+  }
+  for (const topic of topics) {
+    processFactCheck(topic.factCheck, topic.title)
+    for (const child of topic.children) processFactCheck(child.factCheck, child.title)
+  }
+  return facts
+}
+
+function getUncheckedTopicIds(topics: TopicWithFactCheck[]): string[] {
+  const ids: string[] = []
+  for (const topic of topics) {
+    if (topic.stances.length > 0 && !topic.factCheck) ids.push(topic.id)
+    for (const child of topic.children) {
+      if (child.stances.length > 0 && !child.factCheck) ids.push(child.id)
+    }
+  }
+  return ids
+}
+
+function getAllTopicIds(topics: TopicWithFactCheck[]): string[] {
+  const ids: string[] = []
+  for (const topic of topics) {
+    if (topic.stances.length > 0) ids.push(topic.id)
+    for (const child of topic.children) {
+      if (child.stances.length > 0) ids.push(child.id)
+    }
+  }
+  return ids
 }
 
 export default async function DiscussionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -63,6 +131,15 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
   if (!recording) notFound()
 
   const isProcessing = recording.status === "PENDING" || recording.status === "PROCESSING"
+
+  // Compute statistics
+  const interruptions = computeInterruptions(recording.utterances)
+  const incorrectFacts = recording.analysis ? computeIncorrectFacts(recording.analysis.topics) : []
+  const uncheckedTopicIds = recording.analysis ? getUncheckedTopicIds(recording.analysis.topics) : []
+  const allTopicIds = recording.analysis ? getAllTopicIds(recording.analysis.topics) : []
+  const contradictions: ContradictionEntry[] | null = recording.analysis?.contradictions
+    ? (() => { try { return JSON.parse(recording.analysis!.contradictions!) } catch { return null } })()
+    : recording.analysis ? null : null
 
   return (
     <div className="flex flex-col gap-6">
@@ -130,7 +207,7 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
             </div>
           </CollapsibleBlock>
 
-          <hr className="border-border my-2" />
+          <hr className="border-border my-5" />
 
           {/* Block 2 — Topics Discussed */}
           <CollapsibleBlock title="Topics Discussed" icon="bar-chart" color="cobalt" defaultOpen={true}>
@@ -144,7 +221,7 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
             <AnalyseButton recordingId={id} hasExisting={!!recording.analysis} initialDepth={(recording.analysis?.depth as "low" | "medium" | "high") ?? "medium"} />
           </div>
 
-          <hr className="border-border my-2" />
+          <hr className="border-border my-5" />
 
           {/* Block 3 — Transcript & Timeline */}
           <CollapsibleBlock title="Transcript & Timeline" icon="file-text" color="ivory" defaultOpen={true}>
@@ -155,11 +232,19 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
             />
           </CollapsibleBlock>
 
-          <hr className="border-border my-2" />
+          <hr className="border-border my-5" />
 
           {/* Block 4 — Statistics */}
           <CollapsibleBlock title="Statistics" icon="trending-up" color="gold" defaultOpen={false}>
-            <StatisticsSection />
+            <StatisticsSection
+              interruptions={interruptions}
+              incorrectFacts={incorrectFacts}
+              contradictions={contradictions}
+              uncheckedTopicIds={uncheckedTopicIds}
+              allTopicIds={allTopicIds}
+              hasAnalysis={!!recording.analysis}
+              recordingId={id}
+            />
           </CollapsibleBlock>
         </div>
       )}
