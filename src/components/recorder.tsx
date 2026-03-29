@@ -98,15 +98,15 @@ export function Recorder() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-8 py-12">
+    <div className="flex flex-col items-center gap-10">
       {/* Speaker count selector — only shown before recording */}
       {state === "idle" && (
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-sm text-muted-foreground">How many people are participating?</p>
-          <div className="flex gap-2">
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-base text-muted-foreground">How many people are participating?</p>
+          <div className="flex gap-3">
             <button
               onClick={() => setSpeakersExpected(null)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors
+              className={`px-5 py-2.5 rounded-full text-base font-medium border transition-colors
                 ${speakersExpected === null ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"}`}
             >
               Unknown
@@ -115,7 +115,7 @@ export function Recorder() {
               <button
                 key={n}
                 onClick={() => setSpeakersExpected(n)}
-                className={`w-9 h-9 rounded-full text-sm font-medium border transition-colors
+                className={`w-12 h-12 rounded-full text-base font-medium border transition-colors
                   ${speakersExpected === n ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"}`}
               >
                 {n}
@@ -128,62 +128,63 @@ export function Recorder() {
       {/* Mic button */}
       <div className="relative flex items-center justify-center">
         {state === "recording" && (
-          <span className="absolute inline-flex h-32 w-32 rounded-full bg-red-400 opacity-30 animate-ping" />
+          <span className="absolute inline-flex h-52 w-52 rounded-full bg-red-400 opacity-30 animate-ping" />
         )}
         <button
           onClick={state === "idle" ? startRecording : state === "recording" ? stopRecording : undefined}
           disabled={state === "ready" || state === "submitting"}
-          className={`relative z-10 flex items-center justify-center w-28 h-28 rounded-full transition-colors shadow-lg
+          className={`relative z-10 flex items-center justify-center w-44 h-44 rounded-full transition-colors shadow-xl
             ${state === "idle" ? "bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer" : ""}
             ${state === "recording" ? "bg-red-500 hover:bg-red-600 text-white cursor-pointer" : ""}
             ${state === "ready" || state === "submitting" ? "bg-muted text-muted-foreground cursor-default" : ""}
           `}
         >
-          {state === "recording" ? <Square className="w-10 h-10" /> : <Mic className="w-10 h-10" />}
+          {state === "recording" ? <Square className="w-16 h-16" /> : <Mic className="w-16 h-16" />}
         </button>
       </div>
 
       {/* Status text */}
       <div className="text-center">
-        {state === "idle" && <p className="text-muted-foreground">Click to start recording</p>}
+        {state === "idle" && <p className="text-lg text-muted-foreground">Click to start recording</p>}
         {state === "recording" && (
-          <div className="flex flex-col items-center gap-1">
-            <p className="text-2xl font-mono font-semibold text-red-500">{formatTime(elapsed)}</p>
-            <p className="text-muted-foreground text-sm">Recording — click to stop</p>
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-4xl font-mono font-semibold text-red-500">{formatTime(elapsed)}</p>
+            <p className="text-muted-foreground text-base">Recording — click to stop</p>
           </div>
         )}
         {(state === "ready" || state === "submitting") && (
-          <p className="text-muted-foreground text-sm">Recorded {formatTime(elapsed)}</p>
+          <p className="text-muted-foreground text-base">Recorded {formatTime(elapsed)}</p>
         )}
       </div>
 
       {/* Post-recording controls */}
       {(state === "ready" || state === "submitting") && (
-        <div className="flex flex-col gap-4 w-full max-w-sm">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="title">Discussion title (optional)</Label>
+        <div className="flex flex-col gap-5 w-full max-w-md">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="title" className="text-base">Discussion title (optional)</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Team standup, Project review..."
               disabled={state === "submitting"}
+              className="h-12 text-base"
             />
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={reset} disabled={state === "submitting"} className="flex-1">
-              <RotateCcw className="w-4 h-4 mr-2" />
+          <div className="flex gap-4">
+            <Button variant="outline" onClick={reset} disabled={state === "submitting"} className="flex-1 h-12 text-base">
+              <RotateCcw className="w-5 h-5 mr-2" />
               Re-record
             </Button>
-            <Button onClick={submit} disabled={state === "submitting"} className="flex-1">
-              <Send className="w-4 h-4 mr-2" />
+            <Button onClick={submit} disabled={state === "submitting"} className="flex-1 h-12 text-base">
+              <Send className="w-5 h-5 mr-2" />
               {state === "submitting" ? "Uploading…" : "Submit"}
             </Button>
           </div>
         </div>
       )}
 
-      {error && <p className="text-sm text-destructive text-center max-w-sm">{error}</p>}
+      {error && <p className="text-base text-destructive text-center max-w-md">{error}</p>}
     </div>
   )
 }

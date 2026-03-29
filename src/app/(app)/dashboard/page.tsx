@@ -8,10 +8,10 @@ export default async function DashboardPage() {
   if (!session) redirect("/sign-in")
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center justify-center min-h-[80vh] gap-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold">New Discussion</h1>
-        <p className="text-muted-foreground mt-1">Record your discussion and we&apos;ll transcribe it with speaker labels.</p>
+        <h1 className="text-4xl font-bold">New Discussion</h1>
+        <p className="text-muted-foreground mt-2 text-lg">Record your discussion and we&apos;ll transcribe it with speaker labels.</p>
       </div>
       <Recorder />
     </div>
