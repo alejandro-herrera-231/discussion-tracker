@@ -7,7 +7,8 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(find . -type f -name auth.ts -o -name package.json -o -name .env*)"
     ]
   }
 }

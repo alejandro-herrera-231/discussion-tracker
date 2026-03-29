@@ -10,6 +10,7 @@ import { DiscussionView } from "@/components/discussion-view"
 import { EditableSpeakerCard } from "@/components/editable-speaker-card"
 import { AnalysisSection } from "@/components/analysis-section"
 import { AnalyseButton } from "@/components/analyse-button"
+import { AddSpeakerCard } from "@/components/add-speaker-card"
 import { CollapsibleBlock } from "@/components/collapsible-block"
 import { SpeakerPieChart } from "@/components/speaker-pie-chart"
 import { StatisticsSection } from "@/components/statistics-section"
@@ -122,6 +123,7 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
                   {recording.speakers.map((speaker, i) => (
                     <EditableSpeakerCard key={speaker.id} speaker={speaker} index={i} />
                   ))}
+                  <AddSpeakerCard recordingId={id} />
                 </div>
                 <div className="flex-1 flex items-center justify-center">
                   <SpeakerPieChart speakers={recording.speakers} />

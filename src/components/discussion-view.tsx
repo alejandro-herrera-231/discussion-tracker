@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { List, Columns2 } from "lucide-react"
+import { List, Columns2, CheckCircle2 } from "lucide-react"
 import { TranscriptSection } from "@/components/transcript-section"
 import { TimelineView } from "@/components/timeline-view"
 import { UtteranceEditModal } from "@/components/utterance-edit-modal"
@@ -22,15 +22,29 @@ export function DiscussionView({
   const router = useRouter()
   const [view, setView] = useState<"transcript" | "timeline">("transcript")
   const [editing, setEditing] = useState<Utterance | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (!saved) return
+    const t = setTimeout(() => setSaved(false), 2500)
+    return () => clearTimeout(t)
+  }, [saved])
 
   return (
     <div className="flex flex-col gap-4">
       {/* Header + toggle */}
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-lg">
-          Transcript
-          <span className="text-sm font-normal text-muted-foreground ml-2">— click any line to edit</span>
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-semibold text-lg">Transcript</h2>
+          {saved ? (
+            <span className="flex items-center gap-1 text-xs text-green-600 animate-in fade-in">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Saved
+            </span>
+          ) : (
+            <span className="text-sm font-normal text-muted-foreground">— click any line to edit</span>
+          )}
+        </div>
         <div className="flex rounded-lg border overflow-hidden text-sm">
           <button
             onClick={() => setView("transcript")}
@@ -63,7 +77,7 @@ export function DiscussionView({
           speakers={speakers}
           open={true}
           onClose={() => setEditing(null)}
-          onSaved={() => { router.refresh(); setEditing(null) }}
+          onSaved={() => { router.refresh(); setEditing(null); setSaved(true) }}
         />
       )}
     </div>
