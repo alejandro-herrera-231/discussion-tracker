@@ -4,7 +4,7 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Mail } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -36,6 +36,25 @@ export default function SignUpPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  const [magicEmail, setMagicEmail] = useState("")
+  const [magicLoading, setMagicLoading] = useState(false)
+  const [magicSent, setMagicSent] = useState(false)
+  const [magicError, setMagicError] = useState("")
+
+  async function handleMagicLink(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!magicEmail.trim()) return
+    setMagicLoading(true)
+    setMagicError("")
+    const result = await signIn("email", { email: magicEmail, redirect: false })
+    setMagicLoading(false)
+    if (result?.error) {
+      setMagicError("Invalid email address. Please check and try again.")
+    } else {
+      setMagicSent(true)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -72,13 +91,42 @@ export default function SignUpPage() {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
 
-        {/* OAuth buttons */}
-        <div className="flex flex-col gap-2">
-          <Button variant="outline" className="gap-2 justify-start" onClick={() => signIn("google", { callbackUrl: "/dashboard" })}>
-            <GoogleIcon />
-            Continue with Google
-          </Button>
-        </div>
+        {/* Google */}
+        <Button variant="outline" className="gap-2 justify-start" onClick={() => signIn("google", { callbackUrl: "/dashboard" })}>
+          <GoogleIcon />
+          Continue with Google
+        </Button>
+
+        <Divider label="or continue with a magic link" />
+
+        {/* Magic link */}
+        {magicSent ? (
+          <div className="flex flex-col items-center gap-2 py-2 text-center">
+            <Mail className="w-8 h-8 text-muted-foreground" />
+            <p className="text-sm font-medium">Check your inbox</p>
+            <p className="text-xs text-muted-foreground">We sent a sign-in link to {magicEmail}.</p>
+            <button onClick={() => setMagicSent(false)} className="text-xs underline underline-offset-4 text-muted-foreground hover:text-foreground mt-1">
+              Use a different email
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleMagicLink} className="flex flex-col gap-1.5">
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                value={magicEmail}
+                onChange={(e) => setMagicEmail(e.target.value)}
+                required
+                className="flex-1"
+              />
+              <Button type="submit" variant="outline" disabled={magicLoading}>
+                {magicLoading ? "Sending…" : "Send link"}
+              </Button>
+            </div>
+            {magicError && <p className="text-sm text-destructive">{magicError}</p>}
+          </form>
+        )}
 
         <Divider label="or create an account with email" />
 

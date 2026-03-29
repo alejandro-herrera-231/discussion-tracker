@@ -116,6 +116,11 @@ export function EditableSpeakerCard({
         </CardContent>
       </Card>
       {deleteError && <p className="text-xs text-destructive px-1">{deleteError}</p>}
+      {!deleting && speaker.totalSpeakingTime === 0 && !editing && (
+        <p className="text-xs text-muted-foreground px-1">
+          No utterances yet — assign some in the transcript below
+        </p>
+      )}
     </div>
   )
 }

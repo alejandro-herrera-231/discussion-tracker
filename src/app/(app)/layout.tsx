@@ -3,6 +3,27 @@ import { Mic } from "lucide-react"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { SignOutButton } from "@/components/sign-out-button"
+import { NavLinks } from "@/components/nav-links"
+
+function UserAvatar({ name, image }: { name?: string | null; image?: string | null }) {
+  const initials = (name ?? "?")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+
+  return (
+    <div className="w-7 h-7 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0 text-xs font-semibold text-muted-foreground">
+      {image ? (
+        <img src={image} alt={name ?? "Profile"} className="w-full h-full object-cover" />
+      ) : (
+        initials
+      )}
+    </div>
+  )
+}
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
@@ -14,18 +35,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Mic className="w-5 h-5 text-primary" />
             Discussion Tracker
           </Link>
-          <nav className="flex gap-4 text-sm">
-            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-              Record
-            </Link>
-            <Link href="/discussions" className="text-muted-foreground hover:text-foreground transition-colors">
-              Discussions
-            </Link>
-          </nav>
+          <NavLinks />
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
-            {session?.user.name ?? session?.user.email}
+          <Link href="/profile" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:flex">
+            <UserAvatar name={session?.user.name} image={session?.user.image} />
+            <span>{session?.user.name ?? session?.user.email}</span>
           </Link>
           <SignOutButton />
         </div>

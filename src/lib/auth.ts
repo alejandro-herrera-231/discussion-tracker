@@ -48,7 +48,7 @@ export const authOptions: NextAuthOptions = {
         if (!user || !user.password) return null
         const valid = await bcrypt.compare(credentials.password, user.password)
         if (!valid) return null
-        return { id: user.id, email: user.email, name: user.name }
+        return { id: user.id, email: user.email, name: user.name, image: user.image }
       },
     }),
   ],
@@ -58,12 +58,21 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.id = user.id
+      if (user) {
+        token.id = user.id
+        token.image = (user as { image?: string | null }).image ?? null
+      }
       return token
     },
     session({ session, token }) {
-      if (session.user) session.user.id = token.id as string
-      return session
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id as string,
+          image: token.image as string | null | undefined,
+        },
+      }
     },
   },
 }
