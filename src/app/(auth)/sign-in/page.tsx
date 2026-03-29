@@ -44,6 +44,7 @@ function SignInContent() {
   const [magicEmail, setMagicEmail] = useState("")
   const [magicLoading, setMagicLoading] = useState(false)
   const [magicSent, setMagicSent] = useState(verifyParam === "1")
+  const [magicError, setMagicError] = useState("")
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -67,9 +68,14 @@ function SignInContent() {
     e.preventDefault()
     if (!magicEmail.trim()) return
     setMagicLoading(true)
-    await signIn("email", { email: magicEmail, redirect: false })
+    setMagicError("")
+    const result = await signIn("email", { email: magicEmail, redirect: false })
     setMagicLoading(false)
-    setMagicSent(true)
+    if (result?.error) {
+      setMagicError("Invalid email address. Please check and try again.")
+    } else {
+      setMagicSent(true)
+    }
   }
 
   return (
@@ -108,18 +114,21 @@ function SignInContent() {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleMagicLink} className="flex gap-2">
-            <Input
-              type="email"
-              placeholder="you@example.com"
-              value={magicEmail}
-              onChange={(e) => setMagicEmail(e.target.value)}
-              required
-              className="flex-1"
-            />
-            <Button type="submit" variant="outline" disabled={magicLoading}>
-              {magicLoading ? "Sending…" : "Send link"}
-            </Button>
+          <form onSubmit={handleMagicLink} className="flex flex-col gap-1.5">
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                value={magicEmail}
+                onChange={(e) => setMagicEmail(e.target.value)}
+                required
+                className="flex-1"
+              />
+              <Button type="submit" variant="outline" disabled={magicLoading}>
+                {magicLoading ? "Sending…" : "Send link"}
+              </Button>
+            </div>
+            {magicError && <p className="text-sm text-destructive">{magicError}</p>}
           </form>
         )}
 

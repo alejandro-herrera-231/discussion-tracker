@@ -24,9 +24,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground hidden sm:block">
+          <Link href="/profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
             {session?.user.name ?? session?.user.email}
-          </span>
+          </Link>
           <SignOutButton />
         </div>
       </header>
