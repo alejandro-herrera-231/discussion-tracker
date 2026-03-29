@@ -32,27 +32,38 @@ function statusBadge(status: string) {
   }
 }
 
-// Interruption threshold: speaker changes within 300ms are treated as quick cutoffs.
-// AssemblyAI diarized transcripts are sequential (no overlapping timestamps), so we
-// use a gap-based heuristic. 300ms catches genuine rapid jumps without flagging
-// normal conversational turn-taking pauses (~500ms+).
-const INTERRUPTION_GAP_MS = 300
+// Interruption threshold: speaker changes within 150ms are treated as quick cutoffs.
+// AssemblyAI diarized transcripts are sequential (non-overlapping), so we use a
+// tight gap heuristic. Normal turn-taking pauses are 200-500ms; 150ms catches only
+// genuine rapid cut-offs without flagging conversational flow.
+const INTERRUPTION_GAP_MS = 150
 
-type Utterance = { speakerId: string; speaker: { label: string }; startMs: number; endMs: number }
+type Utterance = { speakerId: string; speaker: { label: string }; startMs: number; endMs: number; text: string }
 
 function computeInterruptions(utterances: Utterance[]): InterruptionEntry[] {
   const sorted = [...utterances].sort((a, b) => a.startMs - b.startMs)
-  const counts: Record<string, { label: string; count: number }> = {}
+  const pairs: Record<string, InterruptionEntry> = {}
   for (let i = 1; i < sorted.length; i++) {
     const prev = sorted[i - 1]
     const curr = sorted[i]
     const gap = curr.startMs - prev.endMs
-    if (prev.speakerId !== curr.speakerId && gap < INTERRUPTION_GAP_MS) {
-      if (!counts[curr.speakerId]) counts[curr.speakerId] = { label: curr.speaker.label, count: 0 }
-      counts[curr.speakerId].count++
+    if (prev.speakerId !== curr.speakerId && gap >= 0 && gap < INTERRUPTION_GAP_MS) {
+      const key = `${curr.speakerId}->${prev.speakerId}`
+      if (!pairs[key]) {
+        pairs[key] = {
+          interrupterId: curr.speakerId,
+          interrupterLabel: curr.speaker.label,
+          interruptedId: prev.speakerId,
+          interruptedLabel: prev.speaker.label,
+          count: 0,
+          moments: [],
+        }
+      }
+      pairs[key].count++
+      pairs[key].moments.push({ timeMs: prev.startMs, interruptedText: prev.text })
     }
   }
-  return Object.entries(counts).map(([speakerId, { label, count }]) => ({ speakerId, speakerLabel: label, count }))
+  return Object.values(pairs)
 }
 
 type FactCheckData = { results: string } | null
@@ -63,10 +74,12 @@ function computeIncorrectFacts(topics: TopicWithFactCheck[]): IncorrectFactEntry
   function processFactCheck(factCheck: FactCheckData, topicTitle: string) {
     if (!factCheck) return
     try {
-      const parsed = JSON.parse(factCheck.results) as { stanceVerdicts: { speakerId: string; speakerLabel: string; claim: string; verdict: string; assessment: string }[] }
+      const parsed = JSON.parse(factCheck.results) as { stanceVerdicts: { speakerId: string; speakerLabel: string; claim: string; verdict: string; assessment: string; isConcreteFact?: boolean }[] }
       for (const sv of parsed.stanceVerdicts) {
-        if (sv.verdict === "contradicted") {
-          facts.push({ speakerId: sv.speakerId, speakerLabel: sv.speakerLabel, claim: sv.claim, assessment: sv.assessment, topicTitle })
+        // Only show claims that are contradicted AND were concrete factual assertions (not opinions/speculation).
+        // isConcreteFact may be absent for older fact-checks — treat missing as true for backward compat.
+        if (sv.verdict === "contradicted" && sv.isConcreteFact !== false) {
+          facts.push({ speakerId: sv.speakerId, speakerLabel: sv.speakerLabel, claim: sv.claim, assessment: sv.assessment, topicTitle, isConcreteFact: sv.isConcreteFact })
         }
       }
     } catch {}

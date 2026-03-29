@@ -16,6 +16,7 @@ type StanceVerdict = {
   verdict: "supported" | "contradicted" | "nuanced" | "unverifiable"
   assessment: string
   sources: Source[]
+  isConcreteFact: boolean
 }
 
 export async function POST(_req: Request, { params }: { params: Promise<{ topicId: string }> }) {
@@ -128,6 +129,7 @@ Return ONLY a valid JSON array with one entry per speaker:
     "speakerLabel": "...",
     "claim": "concise restatement of their claim",
     "verdict": "supported" | "contradicted" | "nuanced" | "unverifiable",
+    "isConcreteFact": true | false,
     "assessment": "2-3 sentences: what the evidence says, be direct and specific. Mention source numbers like [1] where relevant.",
     "sources": [
       { "title": "source title", "url": "source url", "excerpt": "most relevant sentence or two from this source" }
@@ -140,6 +142,8 @@ Verdict definitions:
 - contradicted: evidence clearly contradicts the claim
 - nuanced: evidence partially supports but with important caveats
 - unverifiable: insufficient reliable evidence found
+
+isConcreteFact: set to true only if the speaker made a definitive factual assertion (not an opinion, personal preference, or speculative statement). Set to false if the claim is inherently subjective or speculative.
 
 Only include sources that are actually relevant to the verdict. Max 3 sources per stance.
 Return ONLY the JSON array.`,
