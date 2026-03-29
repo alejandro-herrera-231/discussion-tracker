@@ -42,6 +42,11 @@ NEXTAUTH_SECRET="any-random-string-here"
 ASSEMBLYAI_API_KEY=""
 ANTHROPIC_API_KEY=""
 TAVILY_API_KEY=""
+
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+
+RESEND_API_KEY=""
 ```
 
 Then fill in the three API keys:
