@@ -1,6 +1,6 @@
-# Discussion Tracker
+# Roundtable
 
-A web app for recording discussions and analysing them — speaker-diarized transcripts, speaking time breakdown, AI topic analysis, and per-claim fact-checking. Built for families, partners, and friend groups to understand conversation dynamics.
+A web app for recording discussions and analysing them — speaker-diarized transcripts, speaking time breakdown, AI topic analysis, and per-claim fact-checking. Built for families, partners, and friend groups to understand conversation dynamics while summarising conversation notes.
 
 ---
 
